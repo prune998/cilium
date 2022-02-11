@@ -29,22 +29,6 @@ type EndpointInfoSource interface {
 	ConntrackName() string
 	ConntrackNameLocked() string
 	GetNamedPortLocked(ingress bool, name string, proto uint8) uint16
-	GetProxyInfoByFields() (uint64, string, string, []string, string, uint64, error)
-}
-
-// getEndpointInfo returns a consistent snapshot of the given source.
-// The source's read lock must not be held.
-func getEndpointInfo(source EndpointInfoSource) *accesslog.EndpointInfo {
-
-	id, ipv4, ipv6, labels, labelsSHA256, identity, _ := source.GetProxyInfoByFields()
-	return &accesslog.EndpointInfo{
-		ID:           id,
-		IPv4:         ipv4,
-		IPv6:         ipv6,
-		Labels:       labels,
-		LabelsSHA256: labelsSHA256,
-		Identity:     identity,
-	}
 }
 
 // EndpointUpdater returns information about an endpoint being proxied and
@@ -69,21 +53,13 @@ type EndpointUpdater interface {
 // EndpointInfoRegistry provides endpoint information lookup by endpoint IP
 // address.
 type EndpointInfoRegistry interface {
-	// FillEndpointIdentityByID resolves the labels of the specified identity
-	// if known locally and fills in the following info member fields:
-	//  - info.Identity
-	//  - info.Labels
-	//  - info.LabelsSHA256
-	// Returns true if found, false if not found.
-	FillEndpointIdentityByID(id identity.NumericIdentity, info *accesslog.EndpointInfo) bool
-
-	// FillEndpointIdentityByIP resolves the labels of the endpoint with the
-	// specified IP if known locally and fills in the following info member
-	// fields:
-	//  - info.ID
-	//  - info.Identity
-	//  - info.Labels
-	//  - info.LabelsSHA256
-	// Returns true if found, false if not found.
-	FillEndpointIdentityByIP(ip net.IP, info *accesslog.EndpointInfo) bool
+	// FillEndpointInfo resolves the labels of the specified identity if known locally.
+	// If 'id' is passed as zero, will locate the EP by 'ip', and also fill info.ID, if found.
+	// Fills in the following info member fields:
+	//  - info.IPv4           (if 'ip' is IPv4)
+	//  - info.IPv6           (if 'ip' is not IPv4)
+	//  - info.Identity       (defaults to WORLD if not known)
+	//  - info.Labels         (only if identity is found)
+	//  - info.LabelsSHA256   (only if identity is found)
+	FillEndpointInfo(info *accesslog.EndpointInfo, ip net.IP, id identity.NumericIdentity)
 }

@@ -50,23 +50,19 @@ const (
 // LogRecord is a proxy log record based off accesslog.LogRecord.
 type LogRecord struct {
 	accesslog.LogRecord
+}
 
-	// endpointInfoRegistry provides access to any endpoint's information given
-	// its IP address.
-	endpointInfoRegistry EndpointInfoRegistry
+var endpointInfoRegistry EndpointInfoRegistry
 
-	// localEndpointInfo is the information on the local endpoint which
-	// either sent the request (for egress) or is receiving the request
-	// (for ingress)
-	localEndpointInfo *accesslog.EndpointInfo
+func SetEndpointInfoRegistry(epInfoRegistry EndpointInfoRegistry) {
+	endpointInfoRegistry = epInfoRegistry
 }
 
 // NewLogRecord creates a new log record and applies optional tags
 //
 // Example:
-// record := logger.NewLogRecord(localEndpointInfoSource, flowType,
-//                observationPoint, logger.LogTags.Timestamp(time.Now()))
-func NewLogRecord(endpointInfoRegistry EndpointInfoRegistry, localEndpointInfoSource EndpointInfoSource, t accesslog.FlowType, ingress bool, tags ...LogTag) *LogRecord {
+// record := logger.NewLogRecord(flowType, observationPoint, logger.LogTags.Timestamp(time.Now()))
+func NewLogRecord(t accesslog.FlowType, ingress bool, tags ...LogTag) *LogRecord {
 	var observationPoint accesslog.ObservationPoint
 	if ingress {
 		observationPoint = accesslog.Ingress
@@ -83,8 +79,6 @@ func NewLogRecord(endpointInfoRegistry EndpointInfoRegistry, localEndpointInfoSo
 			Timestamp:         time.Now().UTC().Format(time.RFC3339Nano),
 			NodeAddressInfo:   accesslog.NodeAddressInfo{},
 		},
-		endpointInfoRegistry: endpointInfoRegistry,
-		localEndpointInfo:    getEndpointInfo(localEndpointInfoSource),
 	}
 
 	if ip := node.GetIPv4(); ip != nil {
@@ -100,71 +94,6 @@ func NewLogRecord(endpointInfoRegistry EndpointInfoRegistry, localEndpointInfoSo
 	}
 
 	return &lr
-}
-
-// fillEndpointInfo tries to resolve the IP address and fills the EndpointInfo
-// fields with either ReservedIdentityHost or ReservedIdentityWorld
-func (lr *LogRecord) fillEndpointInfo(info *accesslog.EndpointInfo, ip net.IP) {
-	if ip.To4() != nil {
-		info.IPv4 = ip.String()
-
-		// first we try to resolve and check if the IP is
-		// same as Host
-		if node.IsHostIPv4(ip) {
-			lr.endpointInfoRegistry.FillEndpointIdentityByID(identity.ReservedIdentityHost, info)
-		} else if !lr.endpointInfoRegistry.FillEndpointIdentityByIP(ip, info) {
-			// If we are unable to resolve the HostIP as well
-			// as the cluster IP we mark this as a 'world' identity.
-			lr.endpointInfoRegistry.FillEndpointIdentityByID(identity.ReservedIdentityWorld, info)
-		}
-	} else {
-		info.IPv6 = ip.String()
-
-		if node.IsHostIPv6(ip) {
-			lr.endpointInfoRegistry.FillEndpointIdentityByID(identity.ReservedIdentityHost, info)
-		} else if !lr.endpointInfoRegistry.FillEndpointIdentityByIP(ip, info) {
-			lr.endpointInfoRegistry.FillEndpointIdentityByID(identity.ReservedIdentityWorld, info)
-		}
-	}
-}
-
-// fillIngressSourceInfo fills the EndpointInfo fields using identity sent by
-// source. This is needed in ingress proxy while logging the source endpoint
-// info.  Since there will be 2 proxies on the same host, if both egress and
-// ingress policies are set, the ingress policy cannot determine the source
-// endpoint info based on ip address, as the ip address would be that of the
-// egress proxy i.e host.
-func (lr *LogRecord) fillIngressSourceInfo(info *accesslog.EndpointInfo, ip *net.IP, srcIdentity uint32) {
-	if srcIdentity != 0 {
-		if ip != nil {
-			if ip.To4() != nil {
-				info.IPv4 = ip.String()
-			} else {
-				info.IPv6 = ip.String()
-			}
-		}
-		lr.endpointInfoRegistry.FillEndpointIdentityByID(identity.NumericIdentity(srcIdentity), info)
-	} else {
-		// source security identity 0 is possible when somebody else other than
-		// the BPF datapath attempts to
-		// connect to the proxy.
-		// We should try to resolve if the identity belongs to reserved_host
-		// or reserved_world.
-		if ip != nil {
-			lr.fillEndpointInfo(info, *ip)
-		} else {
-			log.Warn("Missing security identity in source endpoint info")
-		}
-	}
-}
-
-// fillEgressDestinationInfo returns the destination EndpointInfo for a flow
-// leaving the proxy at egress.
-func (lr *LogRecord) fillEgressDestinationInfo(info *accesslog.EndpointInfo, ipstr string) {
-	ip := net.ParseIP(ipstr)
-	if ip != nil {
-		lr.fillEndpointInfo(info, ip)
-	}
 }
 
 // LogTag attaches a tag to a log record
@@ -195,20 +124,14 @@ func (logTags) Timestamp(ts time.Time) LogTag {
 type AddressingInfo struct {
 	SrcIPPort   string
 	DstIPPort   string
-	SrcIdentity uint32
+	SrcIdentity identity.NumericIdentity
+	DstIdentity identity.NumericIdentity
 }
 
 // Addressing attaches addressing information about the source and destination
 // to the logrecord
 func (logTags) Addressing(i AddressingInfo) LogTag {
 	return func(lr *LogRecord) {
-		switch lr.ObservationPoint {
-		case accesslog.Ingress:
-			lr.DestinationEndpoint = *lr.localEndpointInfo
-		case accesslog.Egress:
-			lr.SourceEndpoint = *lr.localEndpointInfo
-		}
-
 		ipstr, port, err := net.SplitHostPort(i.SrcIPPort)
 		if err == nil {
 			ip := net.ParseIP(ipstr)
@@ -219,20 +142,17 @@ func (logTags) Addressing(i AddressingInfo) LogTag {
 			p, err := strconv.ParseUint(port, 10, 16)
 			if err == nil {
 				lr.SourceEndpoint.Port = uint16(p)
-				if lr.ObservationPoint == accesslog.Ingress {
-					lr.fillIngressSourceInfo(&lr.SourceEndpoint, &ip, i.SrcIdentity)
-				}
+				endpointInfoRegistry.FillEndpointInfo(&lr.SourceEndpoint, ip, i.SrcIdentity)
 			}
 		}
 
 		ipstr, port, err = net.SplitHostPort(i.DstIPPort)
 		if err == nil {
+			ip := net.ParseIP(ipstr)
 			p, err := strconv.ParseUint(port, 10, 16)
 			if err == nil {
 				lr.DestinationEndpoint.Port = uint16(p)
-				if lr.ObservationPoint == accesslog.Egress {
-					lr.fillEgressDestinationInfo(&lr.DestinationEndpoint, ipstr)
-				}
+				endpointInfoRegistry.FillEndpointInfo(&lr.DestinationEndpoint, ip, i.DstIdentity)
 			}
 		}
 	}
