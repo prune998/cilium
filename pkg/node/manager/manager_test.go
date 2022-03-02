@@ -84,7 +84,7 @@ func (i *ipcacheMock) Delete(IP string, source source.Source) bool {
 	return false
 }
 
-func (i *ipcacheMock) TriggerLabelInjection(s source.Source) {
+func (i *ipcacheMock) TriggerLabelInjection() {
 }
 
 func (i *ipcacheMock) UpsertMetadata(prefix string, lbls labels.Labels, src source.Source, uid k8sTypes.UID) {
