@@ -15,12 +15,14 @@ import (
 	"time"
 
 	"gopkg.in/check.v1"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/cilium/cilium/pkg/checker"
 	"github.com/cilium/cilium/pkg/datapath"
 	"github.com/cilium/cilium/pkg/datapath/fake"
 	"github.com/cilium/cilium/pkg/inctimer"
 	"github.com/cilium/cilium/pkg/ipcache"
+	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/node/addressing"
 	nodeTypes "github.com/cilium/cilium/pkg/node/types"
 	"github.com/cilium/cilium/pkg/source"
@@ -83,6 +85,9 @@ func (i *ipcacheMock) Delete(IP string, source source.Source) bool {
 }
 
 func (i *ipcacheMock) TriggerLabelInjection(s source.Source) {
+}
+
+func (i *ipcacheMock) UpsertMetadata(prefix string, lbls labels.Labels, src source.Source, uid k8sTypes.UID) {
 }
 
 type signalNodeHandler struct {
