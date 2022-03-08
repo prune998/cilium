@@ -1290,7 +1290,7 @@ ipv6_policy(struct __ctx_buff *ctx, int ifindex, __u32 src_label,
 	ifindex = ctx_load_meta(ctx, CB_IFINDEX);
 	if (ifindex)
 		return redirect_ep(ctx, ifindex, from_host);
-#endif /* ENABLE_ROUTING && TUNNEL_MODE && !ENABLE_NODEPORT */
+#endif /* !ENABLE_ROUTING && TUNNEL_MODE && !ENABLE_NODEPORT */
 
 	return CTX_ACT_OK;
 }
@@ -1542,9 +1542,9 @@ ipv4_policy(struct __ctx_buff *ctx, int ifindex, __u32 src_label, enum ct_status
 					   verdict, policy_match_type, audited);
 	}
 
-#if !defined(ENABLE_HOST_SERVICES_FULL) && !defined(DISABLE_LOOPBACK_LB)
+#if defined(ENABLE_PER_PACKET_LB) && !defined(DISABLE_LOOPBACK_LB)
 skip_policy_enforcement:
-#endif /* !ENABLE_HOST_SERVICES_FULL && !DISABLE_LOOPBACK_LB */
+#endif /* ENABLE_PER_PACKET_LB && !DISABLE_LOOPBACK_LB */
 
 #ifdef ENABLE_NODEPORT
 	if (ret == CT_NEW || ret == CT_REOPENED) {
@@ -1614,7 +1614,7 @@ skip_policy_enforcement:
 	ifindex = ctx_load_meta(ctx, CB_IFINDEX);
 	if (ifindex)
 		return redirect_ep(ctx, ifindex, from_host);
-#endif /* ENABLE_ROUTING && TUNNEL_MODE && !ENABLE_NODEPORT */
+#endif /* !ENABLE_ROUTING && TUNNEL_MODE && !ENABLE_NODEPORT */
 
 	return CTX_ACT_OK;
 }
