@@ -100,6 +100,24 @@ func (m *ManagerTestSuite) TestUpsertAndDeleteServiceWithoutIPv6(c *C) {
 	m.testUpsertAndDeleteService(c)
 }
 
+func (m *ManagerTestSuite) TestUpsertAndDeleteServiceNat46(c *C) {
+	option.Config.EnableIPv4 = true
+	option.Config.EnableIPv6 = true
+	m.testUpsertAndDeleteService46(c)
+}
+
+func (m *ManagerTestSuite) TestUpsertAndDeleteServiceNat64(c *C) {
+	option.Config.EnableIPv4 = true
+	option.Config.EnableIPv6 = true
+	m.testUpsertAndDeleteService64(c)
+}
+
+func (m *ManagerTestSuite) testUpsertAndDeleteService46(c *C) {
+}
+
+func (m *ManagerTestSuite) testUpsertAndDeleteService64(c *C) {
+}
+
 func (m *ManagerTestSuite) testUpsertAndDeleteService(c *C) {
 	// Should create a new service with two backends and session affinity
 	p := &lb.SVC{
@@ -403,7 +421,6 @@ func (m *ManagerTestSuite) TestSyncWithK8sFinished(c *C) {
 	for _, b := range lbmap.ServiceByID[uint16(id2)].Backends {
 		c.Assert(m.lbmap.AffinityMatch[uint16(id2)][b.ID], Equals, struct{}{})
 	}
-
 }
 
 func (m *ManagerTestSuite) TestHealthCheckNodePort(c *C) {
