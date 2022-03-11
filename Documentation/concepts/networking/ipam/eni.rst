@@ -83,8 +83,10 @@ Custom ENI configuration can be defined with a custom CNI configuration
 Create a CNI configuration
 --------------------------
 
-Create a ``cni-config.yaml`` file based on the template below. Fill in the
-``subnet-tags`` field, assuming that the subnets in AWS have the tags applied
+Create a ``cni-config.yaml`` file based on the template below. The ``subnet-tags``
+field is a tag filter used to identify the subnets to consider when assigning new
+IPs to nodes. Fill in the ``subnet-tags`` field, assuming that the subnets in AWS 
+have the tags applied
 to them:
 
 .. code-block:: yaml
@@ -121,6 +123,17 @@ Deploy the ``ConfigMap``:
 Configure Cilium with subnet-tags-filter
 ----------------------------------------
 
+``subnet-tags-filter`` has nothing to do with ``subnet-tags`` described above.
+
+Define the ``subnet-tags-filter`` option so cilium-operator will only consider 
+EC2 instances that are already using the selected subnets.
+This is a performance setting that will help reduce the size of the cache 
+that Cilium has to maintain.
+
+Only set this option if your instance is using the selected subnet when it start, 
+before Cilium runs on the instance.
+Do not set this option when using a split-network.
+
 Using the instructions above to deploy Cilium, specify the following additional
 arguments to Helm:
 
@@ -128,7 +141,7 @@ arguments to Helm:
 
    --set cni.customConf=true \
    --set cni.configMap=cni-configuration \
-   --set eni.subnetTagsFilter="foo=true"
+   --set eni.subnetTagsFilter="bar=true"
 
 ENI Allocation Parameters
 =========================

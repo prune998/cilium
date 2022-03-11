@@ -462,11 +462,11 @@
      - string
      - ``""``
    * - eni.subnetIDsFilter
-     - Filter via subnet IDs which will dictate which subnets are going to be used to create new ENIs
+     - Filter instances to consider via subnet IDs
      - string
      - ``""``
    * - eni.subnetTagsFilter
-     - Filter via tags (k=v) which will dictate which subnets are going to be used to create new ENIs
+     - Filter instances to consider via tags (k=v)
      - string
      - ``""``
    * - eni.updateEC2AdapterLimitViaAPI
