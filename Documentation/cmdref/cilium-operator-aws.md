@@ -44,6 +44,7 @@ cilium-operator-aws [flags]
       --identity-gc-rate-interval duration        Interval used for rate limiting the GC of security identities (default 1m0s)
       --identity-gc-rate-limit int                Maximum number of security identities that will be deleted within the identity-gc-rate-interval (default 2500)
       --identity-heartbeat-timeout duration       Timeout after which identity expires on lack of heartbeat (default 30m0s)
+      --instance-tags-filter stringToString       Instance tags in the form of k1=v1,k2=v2 (multiple k/v pairs can also be passed by repeating the CLI flag (default [])
       --ipam string                               Backend to use for IPAM (default "eni")
       --k8s-api-server string                     Kubernetes API server URL
       --k8s-client-burst int                      Burst value allowed for the K8s client
@@ -80,4 +81,3 @@ cilium-operator-aws [flags]
 
 * [cilium-operator-aws completion](cilium-operator-aws_completion.html)	 - Generate the autocompletion script for the specified shell
 * [cilium-operator-aws metrics](cilium-operator-aws_metrics.html)	 - Access metric status of the operator
-

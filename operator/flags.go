@@ -35,6 +35,10 @@ func init() {
 		"Subnets IDs (separated by commas)")
 	option.BindEnv(operatorOption.IPAMSubnetsIDs)
 
+	flags.StringToStringVar(&operatorOption.Config.IPAMInstancesTags, operatorOption.IPAMInstancesTags, operatorOption.Config.IPAMInstancesTags,
+		"EC2 Instances tags in the form of k1=v1,k2=v2 (multiple k/v pairs can also be passed by repeating the CLI flag")
+	option.BindEnv(operatorOption.IPAMInstancesTags)
+
 	flags.Int64(operatorOption.ParallelAllocWorkers, defaults.ParallelAllocWorkers, "Maximum number of parallel IPAM workers")
 	option.BindEnv(operatorOption.ParallelAllocWorkers)
 

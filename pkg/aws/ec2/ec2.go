@@ -30,6 +30,7 @@ type Client struct {
 	limiter             *helpers.ApiLimiter
 	metricsAPI          MetricsAPI
 	subnetsFilters      []ec2_types.Filter
+	instancesFilters    []ec2_types.Filter
 	eniTagSpecification ec2_types.TagSpecification
 }
 
@@ -40,7 +41,7 @@ type MetricsAPI interface {
 }
 
 // NewClient returns a new EC2 client
-func NewClient(ec2Client *ec2.Client, metrics MetricsAPI, rateLimit float64, burst int, subnetsFilters []ec2_types.Filter, eniTags map[string]string) *Client {
+func NewClient(ec2Client *ec2.Client, metrics MetricsAPI, rateLimit float64, burst int, subnetsFilters, instancesFilters []ec2_types.Filter, eniTags map[string]string) *Client {
 	eniTagSpecification := ec2_types.TagSpecification{
 		ResourceType: ec2_types.ResourceTypeNetworkInterface,
 		Tags:         createAWSTagSlice(eniTags),
@@ -51,6 +52,7 @@ func NewClient(ec2Client *ec2.Client, metrics MetricsAPI, rateLimit float64, bur
 		metricsAPI:          metrics,
 		limiter:             helpers.NewApiLimiter(metrics, rateLimit, burst),
 		subnetsFilters:      subnetsFilters,
+		instancesFilters:    instancesFilters,
 		eniTagSpecification: eniTagSpecification,
 	}
 }
@@ -96,6 +98,21 @@ func NewSubnetsFilters(tags map[string]string, ids []string) []ec2_types.Filter 
 	return filters
 }
 
+// NewInstancsFilters transforms a map of tags and values
+// into a slice of ec2.Filter adequate to filter AWS Instances.
+func NewInstancesFilters(tags map[string]string) []ec2_types.Filter {
+	filters := make([]ec2_types.Filter, 0, len(tags)+1)
+
+	for k, v := range tags {
+		filters = append(filters, ec2_types.Filter{
+			Name:   aws.String(fmt.Sprintf("tag:%s", k)),
+			Values: []string{v},
+		})
+	}
+
+	return filters
+}
+
 // deriveStatus returns a status string based on the HTTP response provided by
 // the AWS API server. If no specific status is provided, either "OK" or
 // "Failed" is returned based on the error variable.
@@ -133,6 +150,57 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 		c.limiter.Limit(ctx, "DescribeNetworkInterfaces")
 		sinceStart := spanstat.Start()
 		output, err := paginator.NextPage(ctx)
+		c.metricsAPI.ObserveAPICall("DescribeNetworkInterfaces", deriveStatus(err), sinceStart.Seconds())
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, output.NetworkInterfaces...)
+	}
+	return result, nil
+}
+
+// describeNetworkInterfacesFromInstances lists all ENIs matching filtered EC2 instances
+func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]ec2_types.NetworkInterface, error) {
+	subnetsFromInstances := []string{}
+
+	instanceAttrs := &ec2.DescribeInstancesInput{}
+	if len(c.instancesFilters) > 0 {
+		instanceAttrs.Filters = c.instancesFilters
+	}
+
+	paginator := ec2.NewDescribeInstancesPaginator(c.ec2Client, instanceAttrs)
+	for paginator.HasMorePages() {
+		c.limiter.Limit(ctx, "DescribeNetworkInterfacesFromInstances")
+		sinceStart := spanstat.Start()
+		output, err := paginator.NextPage(ctx)
+		c.metricsAPI.ObserveAPICall("DescribeNetworkInterfacesFromInstances", deriveStatus(err), sinceStart.Seconds())
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range output.Reservations {
+			for _, i := range r.Instances {
+				subnetsFromInstances = append(subnetsFromInstances, *i.SubnetId)
+			}
+		}
+	}
+
+	ENIAttrs := &ec2.DescribeNetworkInterfacesInput{}
+	if len(subnetsFromInstances) > 0 {
+		ENIAttrs.Filters = []ec2_types.Filter{
+			{
+				Name:   aws.String("subnet-id"),
+				Values: subnetsFromInstances,
+			},
+		}
+	}
+
+	var result []ec2_types.NetworkInterface
+
+	ENIPaginator := ec2.NewDescribeNetworkInterfacesPaginator(c.ec2Client, ENIAttrs)
+	for ENIPaginator.HasMorePages() {
+		c.limiter.Limit(ctx, "DescribeNetworkInterfaces")
+		sinceStart := spanstat.Start()
+		output, err := ENIPaginator.NextPage(ctx)
 		c.metricsAPI.ObserveAPICall("DescribeNetworkInterfaces", deriveStatus(err), sinceStart.Seconds())
 		if err != nil {
 			return nil, err
@@ -217,7 +285,14 @@ func parseENI(iface *ec2_types.NetworkInterface, vpcs ipamTypes.VirtualNetworkMa
 func (c *Client) GetInstances(ctx context.Context, vpcs ipamTypes.VirtualNetworkMap, subnets ipamTypes.SubnetMap) (*ipamTypes.InstanceMap, error) {
 	instances := ipamTypes.NewInstanceMap()
 
-	networkInterfaces, err := c.describeNetworkInterfaces(ctx, subnets)
+	var networkInterfaces []ec2_types.NetworkInterface
+	var err error
+
+	if len(c.instancesFilters) > 0 {
+		networkInterfaces, err = c.describeNetworkInterfacesFromInstances(ctx)
+	} else {
+		networkInterfaces, err = c.describeNetworkInterfaces(ctx, subnets)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +455,6 @@ func (c *Client) CreateNetworkInterface(ctx context.Context, toAllocate int32, s
 	}
 
 	return eni.ID, eni, nil
-
 }
 
 // DeleteNetworkInterface deletes an ENI with the specified ID
