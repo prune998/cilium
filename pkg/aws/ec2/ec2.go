@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2_types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/cilium/cilium/pkg/api/helpers"
 	"github.com/cilium/cilium/pkg/aws/endpoints"
@@ -284,13 +285,19 @@ func parseENI(iface *ec2_types.NetworkInterface, vpcs ipamTypes.VirtualNetworkMa
 // instanceMap
 func (c *Client) GetInstances(ctx context.Context, vpcs ipamTypes.VirtualNetworkMap, subnets ipamTypes.SubnetMap) (*ipamTypes.InstanceMap, error) {
 	instances := ipamTypes.NewInstanceMap()
+	log.Error("INFO: in GetInstances")
 
 	var networkInterfaces []ec2_types.NetworkInterface
 	var err error
 
+	fmt.Println(c.instancesFilters)
+
 	if len(c.instancesFilters) > 0 {
+		fmt.Println("calling describeNetworkInterfacesFromInstances")
 		networkInterfaces, err = c.describeNetworkInterfacesFromInstances(ctx)
+
 	} else {
+		fmt.Println("calling describeNetworkInterfaces")
 		networkInterfaces, err = c.describeNetworkInterfaces(ctx, subnets)
 	}
 	if err != nil {
