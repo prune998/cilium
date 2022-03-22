@@ -213,11 +213,11 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 			return nil, err
 		}
 
-		for _, n := range output.NetworkInterfaces {
+		result = append(result, output.NetworkInterfaces...)
+		for _, n := range result {
 			fmt.Println("'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, aws.ToString(n.Attachment.InstanceId), aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 
-		result = append(result, output.NetworkInterfaces...)
 	}
 	return result, nil
 }
@@ -319,6 +319,8 @@ func (c *Client) GetInstances(ctx context.Context, vpcs ipamTypes.VirtualNetwork
 		if err != nil {
 			return nil, err
 		}
+
+		fmt.Println(id, eni, err)
 
 		if id != "" {
 			instances.Update(id, ipamTypes.InterfaceRevision{Resource: eni})
