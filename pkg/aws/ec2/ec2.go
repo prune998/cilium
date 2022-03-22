@@ -214,7 +214,7 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		}
 
 		for _, n := range output.NetworkInterfaces {
-			fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, n.Attachment)
+			fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status)
 
 			// if n.Attachment != nil {
 			// 	fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, *n.Attachment.DeviceIndex, *n.Attachment.InstanceId)
