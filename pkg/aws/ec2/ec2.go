@@ -172,6 +172,7 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 
 	paginator := ec2.NewDescribeInstancesPaginator(c.ec2Client, instanceAttrs)
 	for paginator.HasMorePages() {
+		fmt.Println("in paginator")
 		c.limiter.Limit(ctx, "DescribeNetworkInterfacesFromInstances")
 		sinceStart := spanstat.Start()
 		output, err := paginator.NextPage(ctx)
@@ -179,8 +180,8 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("looping in paginator")
 		for _, r := range output.Reservations {
-			fmt.Println("reservation", r.ReservationId, len(r.Instances))
 			for _, i := range r.Instances {
 				fmt.Println("found instance", i.InstanceId)
 				subnetsFromInstances = append(subnetsFromInstances, *i.SubnetId)
@@ -211,6 +212,11 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("found network interfaces", output.NetworkInterfaces)
+		for _, n := range output.NetworkInterfaces {
+			fmt.Println(n.Description, n.Ipv4Prefixes, n.SubnetId, n.PrivateIpAddress)
+		}
+
 		result = append(result, output.NetworkInterfaces...)
 	}
 	return result, nil
