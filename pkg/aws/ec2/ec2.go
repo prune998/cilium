@@ -214,13 +214,7 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		}
 
 		for _, n := range output.NetworkInterfaces {
-			fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status)
-
-			// if n.Attachment != nil {
-			// 	fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, *n.Attachment.DeviceIndex, *n.Attachment.InstanceId)
-			// } else {
-			// 	fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress)
-			// }
+			fmt.Println("'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, aws.ToString(n.Attachment.InstanceId), aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 
 		result = append(result, output.NetworkInterfaces...)
