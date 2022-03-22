@@ -216,12 +216,11 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		for _, n := range output.NetworkInterfaces {
 			fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, n.Attachment)
 
-			if n.Attachment != nil {
-				fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, *n.Attachment.DeviceIndex, *n.Attachment.InstanceId)
-			} else {
-				fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress)
-			}
-
+			// if n.Attachment != nil {
+			// 	fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress, *n.Attachment.DeviceIndex, *n.Attachment.InstanceId)
+			// } else {
+			// 	fmt.Println(*n.Description, *n.SubnetId, *n.PrivateIpAddress)
+			// }
 		}
 
 		result = append(result, output.NetworkInterfaces...)
