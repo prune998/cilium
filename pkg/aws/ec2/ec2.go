@@ -156,8 +156,16 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 		}
 		result = append(result, output.NetworkInterfaces...)
 
-		for _, n := range result {
-			fmt.Println("'"+aws.ToString(n.NetworkInterfaceId)+"'", "'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, "'"+aws.ToString(n.Attachment.InstanceId)+"'", aws.ToInt32(n.Attachment.DeviceIndex))
+		for i, n := range result {
+			fmt.Printf("'%d'", i)
+			fmt.Printf("'%s'", aws.ToString(n.NetworkInterfaceId))
+			fmt.Printf("'%s'", aws.ToString(n.Description))
+			fmt.Printf("'%s'", n.InterfaceType)
+			fmt.Printf("'%s'", aws.ToString(n.SubnetId))
+			fmt.Printf("'%s'", aws.ToString(n.PrivateIpAddress))
+			fmt.Printf("'%s'", n.Attachment.Status)
+			fmt.Printf("'%s'", aws.ToString(n.Attachment.InstanceId))
+			fmt.Printf("'%d'\n", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 	}
 	return result, nil
@@ -218,8 +226,16 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		}
 
 		result = append(result, output.NetworkInterfaces...)
-		for _, n := range result {
-			fmt.Println(*n.NetworkInterfaceId, "'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, "'"+aws.ToString(n.Attachment.InstanceId)+"'", aws.ToInt32(n.Attachment.DeviceIndex))
+		for i, n := range result {
+			fmt.Printf("'%d'", i)
+			fmt.Printf("'%s'", aws.ToString(n.NetworkInterfaceId))
+			fmt.Printf("'%s'", aws.ToString(n.Description))
+			fmt.Printf("'%s'", n.InterfaceType)
+			fmt.Printf("'%s'", aws.ToString(n.SubnetId))
+			fmt.Printf("'%s'", aws.ToString(n.PrivateIpAddress))
+			fmt.Printf("'%s'", n.Attachment.Status)
+			fmt.Printf("'%s'", aws.ToString(n.Attachment.InstanceId))
+			fmt.Printf("'%d'\n", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 
 	}
