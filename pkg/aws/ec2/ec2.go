@@ -157,14 +157,14 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 		result = append(result, output.NetworkInterfaces...)
 
 		for i, n := range result {
-			fmt.Printf("'%d'", i)
-			fmt.Printf("'%s'", aws.ToString(n.NetworkInterfaceId))
-			fmt.Printf("'%s'", aws.ToString(n.Description))
-			fmt.Printf("'%s'", n.InterfaceType)
-			fmt.Printf("'%s'", aws.ToString(n.SubnetId))
-			fmt.Printf("'%s'", aws.ToString(n.PrivateIpAddress))
-			fmt.Printf("'%s'", n.Attachment.Status)
-			fmt.Printf("'%s'", aws.ToString(n.Attachment.InstanceId))
+			fmt.Printf("'%d', ", i)
+			fmt.Printf("'%s', ", aws.ToString(n.NetworkInterfaceId))
+			fmt.Printf("'%s', ", aws.ToString(n.Description))
+			fmt.Printf("'%s', ", n.InterfaceType)
+			fmt.Printf("'%s', ", aws.ToString(n.SubnetId))
+			fmt.Printf("'%s', ", aws.ToString(n.PrivateIpAddress))
+			fmt.Printf("'%s', ", n.Attachment.Status)
+			fmt.Printf("'%s', ", aws.ToString(n.Attachment.InstanceId))
 			fmt.Printf("'%d'\n", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 	}
@@ -227,14 +227,14 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 
 		result = append(result, output.NetworkInterfaces...)
 		for i, n := range result {
-			fmt.Printf("'%d'", i)
-			fmt.Printf("'%s'", aws.ToString(n.NetworkInterfaceId))
-			fmt.Printf("'%s'", aws.ToString(n.Description))
-			fmt.Printf("'%s'", n.InterfaceType)
-			fmt.Printf("'%s'", aws.ToString(n.SubnetId))
-			fmt.Printf("'%s'", aws.ToString(n.PrivateIpAddress))
-			fmt.Printf("'%s'", n.Attachment.Status)
-			fmt.Printf("'%s'", aws.ToString(n.Attachment.InstanceId))
+			fmt.Printf("'%d', ", i)
+			fmt.Printf("'%s', ", aws.ToString(n.NetworkInterfaceId))
+			fmt.Printf("'%s', ", aws.ToString(n.Description))
+			fmt.Printf("'%s', ", n.InterfaceType)
+			fmt.Printf("'%s', ", aws.ToString(n.SubnetId))
+			fmt.Printf("'%s', ", aws.ToString(n.PrivateIpAddress))
+			fmt.Printf("'%s', ", n.Attachment.Status)
+			fmt.Printf("'%s', ", aws.ToString(n.Attachment.InstanceId))
 			fmt.Printf("'%d'\n", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 
