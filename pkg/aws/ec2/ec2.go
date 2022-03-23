@@ -163,7 +163,7 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 			fmt.Printf("'%s', ", n.InterfaceType)
 			fmt.Printf("'%s', ", aws.ToString(n.SubnetId))
 			fmt.Printf("'%s', ", aws.ToString(n.PrivateIpAddress))
-			fmt.Printf("'%s', ", n.Attachment.Status)
+			// fmt.Printf("'%s', ", n.Attachment.Status)
 			fmt.Printf("'%s', ", aws.ToString(n.Attachment.InstanceId))
 			fmt.Printf("'%d'\n", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
