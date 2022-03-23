@@ -157,7 +157,7 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 		result = append(result, output.NetworkInterfaces...)
 
 		for _, n := range result {
-			fmt.Println(*n.NetworkInterfaceId, "'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, "'"+aws.ToString(n.Attachment.InstanceId)+"'", aws.ToInt32(n.Attachment.DeviceIndex))
+			fmt.Println("'"+aws.ToString(n.NetworkInterfaceId)+"'", "'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, "'"+aws.ToString(n.Attachment.InstanceId)+"'", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 	}
 	return result, nil
