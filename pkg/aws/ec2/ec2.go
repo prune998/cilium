@@ -155,6 +155,10 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 			return nil, err
 		}
 		result = append(result, output.NetworkInterfaces...)
+
+		for _, n := range result {
+			fmt.Println(*n.NetworkInterfaceId, "'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, "'"+aws.ToString(n.Attachment.InstanceId)+"'", aws.ToInt32(n.Attachment.DeviceIndex))
+		}
 	}
 	return result, nil
 }
@@ -215,7 +219,7 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 
 		result = append(result, output.NetworkInterfaces...)
 		for _, n := range result {
-			fmt.Println("'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, aws.ToString(n.Attachment.InstanceId), aws.ToInt32(n.Attachment.DeviceIndex))
+			fmt.Println(*n.NetworkInterfaceId, "'"+*n.Description+"'", n.InterfaceType, *n.SubnetId, *n.PrivateIpAddress, n.Attachment.Status, "'"+aws.ToString(n.Attachment.InstanceId)+"'", aws.ToInt32(n.Attachment.DeviceIndex))
 		}
 
 	}
