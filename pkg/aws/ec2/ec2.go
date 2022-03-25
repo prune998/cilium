@@ -200,6 +200,11 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 			for _, i := range r.Instances {
 				fmt.Println("found instance", i.InstanceId)
 				subnetsFromInstances = append(subnetsFromInstances, *i.SubnetId)
+
+				// add subnets from other ENI
+				for _, ifs := range i.NetworkInterfaces {
+					subnetsFromInstances = append(subnetsFromInstances, *ifs.SubnetId)
+				}
 			}
 		}
 	}
