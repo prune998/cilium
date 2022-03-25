@@ -155,18 +155,35 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 			return nil, err
 		}
 		result = append(result, output.NetworkInterfaces...)
+
+		for i, n := range result {
+			fmt.Printf("'%d', ", i)
+			fmt.Printf("'%s', ", aws.ToString(n.NetworkInterfaceId))
+			fmt.Printf("'%s', ", aws.ToString(n.Description))
+			fmt.Printf("'%s', ", n.InterfaceType)
+			fmt.Printf("'%s', ", aws.ToString(n.SubnetId))
+			fmt.Printf("'%s', ", aws.ToString(n.PrivateIpAddress))
+			if n.Attachment != nil {
+				fmt.Printf("'%s', ", n.Attachment.Status)
+				fmt.Printf("'%s', ", aws.ToString(n.Attachment.InstanceId))
+				fmt.Printf("'%d'", aws.ToInt32(n.Attachment.DeviceIndex))
+			}
+			fmt.Printf("\n")
+		}
 	}
 	return result, nil
 }
 
 // describeNetworkInterfacesFromInstances lists all ENIs matching filtered EC2 instances
 func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]ec2_types.NetworkInterface, error) {
-	subnetsFromInstances := []string{}
+	ENIsFromInstances := make(map[string]*struct{})
 
 	instanceAttrs := &ec2.DescribeInstancesInput{}
 	if len(c.instancesFilters) > 0 {
 		instanceAttrs.Filters = c.instancesFilters
 	}
+
+	fmt.Println("filter", instanceAttrs)
 
 	paginator := ec2.NewDescribeInstancesPaginator(c.ec2Client, instanceAttrs)
 	for paginator.HasMorePages() {
@@ -177,21 +194,28 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		if err != nil {
 			return nil, err
 		}
+
+		// loop the instances and add all ENIs to the list
 		for _, r := range output.Reservations {
 			for _, i := range r.Instances {
-				subnetsFromInstances = append(subnetsFromInstances, *i.SubnetId)
+				fmt.Println("found instance", *i.InstanceId)
+				for _, ifs := range i.NetworkInterfaces {
+					ENIsFromInstances[aws.ToString(ifs.NetworkInterfaceId)] = nil
+				}
 			}
 		}
 	}
 
+	ENIsListFromInstances := []string{}
+	for k := range ENIsFromInstances {
+		ENIsListFromInstances = append(ENIsListFromInstances, k)
+	}
+
+	fmt.Println("ENIs", ENIsListFromInstances)
+
 	ENIAttrs := &ec2.DescribeNetworkInterfacesInput{}
-	if len(subnetsFromInstances) > 0 {
-		ENIAttrs.Filters = []ec2_types.Filter{
-			{
-				Name:   aws.String("subnet-id"),
-				Values: subnetsFromInstances,
-			},
-		}
+	if len(ENIsFromInstances) > 0 {
+		ENIAttrs.NetworkInterfaceIds = ENIsListFromInstances
 	}
 
 	var result []ec2_types.NetworkInterface
@@ -205,7 +229,25 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		if err != nil {
 			return nil, err
 		}
+
 		result = append(result, output.NetworkInterfaces...)
+		fmt.Println("print results")
+		for i, n := range result {
+			fmt.Printf("'%d', ", i)
+			fmt.Printf("'%s', ", aws.ToString(n.NetworkInterfaceId))
+			fmt.Printf("'%s', ", aws.ToString(n.Description))
+			fmt.Printf("'%s', ", n.InterfaceType)
+			fmt.Printf("'%s', ", aws.ToString(n.SubnetId))
+			fmt.Printf("'%s', ", aws.ToString(n.PrivateIpAddress))
+			if n.Attachment != nil {
+				fmt.Printf("'%s', ", n.Attachment.Status)
+				fmt.Printf("'%s', ", aws.ToString(n.Attachment.InstanceId))
+				fmt.Printf("'%d'", aws.ToInt32(n.Attachment.DeviceIndex))
+			}
+			fmt.Printf("\n")
+
+		}
+
 	}
 	return result, nil
 }
@@ -288,9 +330,14 @@ func (c *Client) GetInstances(ctx context.Context, vpcs ipamTypes.VirtualNetwork
 	var networkInterfaces []ec2_types.NetworkInterface
 	var err error
 
+	fmt.Println(c.instancesFilters)
+
 	if len(c.instancesFilters) > 0 {
+		fmt.Println("calling describeNetworkInterfacesFromInstances")
 		networkInterfaces, err = c.describeNetworkInterfacesFromInstances(ctx)
+
 	} else {
+		fmt.Println("calling describeNetworkInterfaces")
 		networkInterfaces, err = c.describeNetworkInterfaces(ctx, subnets)
 	}
 	if err != nil {
@@ -302,6 +349,8 @@ func (c *Client) GetInstances(ctx context.Context, vpcs ipamTypes.VirtualNetwork
 		if err != nil {
 			return nil, err
 		}
+
+		fmt.Println(id, eni, err)
 
 		if id != "" {
 			instances.Update(id, ipamTypes.InterfaceRevision{Resource: eni})
