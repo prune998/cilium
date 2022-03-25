@@ -176,7 +176,7 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 
 // describeNetworkInterfacesFromInstances lists all ENIs matching filtered EC2 instances
 func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]ec2_types.NetworkInterface, error) {
-	subnetsMapFromInstances := make(map[string]struct)
+	subnetsMapFromInstances := make(map[string]*struct{})
 	subnetsFromInstances := []string{}
 
 	instanceAttrs := &ec2.DescribeInstancesInput{}
@@ -200,11 +200,11 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		for _, r := range output.Reservations {
 			for _, i := range r.Instances {
 				fmt.Println("found instance", *i.InstanceId)
-				subnetsMapFromInstances[aws.ToString(i.SubnetId)] = {}
+				subnetsMapFromInstances[aws.ToString(i.SubnetId)] = nil
 
 				// add subnets from other ENI
 				for _, ifs := range i.NetworkInterfaces {
-					subnetsMapFromInstances[aws.ToString(ifs.SubnetId)] = {}
+					subnetsMapFromInstances[aws.ToString(ifs.SubnetId)] = nil
 				}
 			}
 		}
