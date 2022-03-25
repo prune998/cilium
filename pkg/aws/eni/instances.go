@@ -191,6 +191,15 @@ func (m *InstancesManager) Resync(ctx context.Context) time.Time {
 		"numSecurityGroups": len(securityGroups),
 	}).Info("Synchronized ENI information")
 
+	instances.ForeachInterface("", func(instanceID, interfaceID string, rev ipamTypes.InterfaceRevision) error {
+		log.WithFields(logrus.Fields{
+			"instanceID":  instanceID,
+			"interfaceID": interfaceID,
+			"rev":         rev.Resource,
+		}).Info("DEBUG EACHE INTERFACE")
+		return nil
+	})
+
 	m.mutex.Lock()
 	m.instances = instances
 	m.subnets = subnets

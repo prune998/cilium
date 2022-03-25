@@ -486,7 +486,7 @@ func (n *Node) ResyncInterfacesAndIPs(ctx context.Context, scopedLog *logrus.Ent
 
 	n.manager.ForeachInstance(instanceID,
 		func(instanceID, interfaceID string, rev ipamTypes.InterfaceRevision) error {
-			fmt.Printf("DEBUG: instance %s, interface %d\n", instanceID, interfaceID)
+			fmt.Printf("DEBUG: instance %s, interface %s\n", instanceID, interfaceID)
 			e, ok := rev.Resource.(*eniTypes.ENI)
 			if !ok {
 				return nil
