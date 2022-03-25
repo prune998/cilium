@@ -176,8 +176,7 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 
 // describeNetworkInterfacesFromInstances lists all ENIs matching filtered EC2 instances
 func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]ec2_types.NetworkInterface, error) {
-	subnetsMapFromInstances := make(map[string]*struct{})
-	subnetsFromInstances := []string{}
+	ENIsFromInstances := make(map[string]*struct{})
 
 	instanceAttrs := &ec2.DescribeInstancesInput{}
 	if len(c.instancesFilters) > 0 {
@@ -200,30 +199,26 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		for _, r := range output.Reservations {
 			for _, i := range r.Instances {
 				fmt.Println("found instance", *i.InstanceId)
-				subnetsMapFromInstances[aws.ToString(i.SubnetId)] = nil
+				ENIsFromInstances[aws.ToString(i.SubnetId)] = nil
 
 				// add subnets from other ENI
 				for _, ifs := range i.NetworkInterfaces {
-					subnetsMapFromInstances[aws.ToString(ifs.SubnetId)] = nil
+					ENIsFromInstances[aws.ToString(ifs.SubnetId)] = nil
 				}
 			}
 		}
 	}
 
-	for k := range subnetsMapFromInstances {
-		subnetsFromInstances = append(subnetsFromInstances, k)
+	ENIsListFromInstances := []string{}
+	for k := range ENIsFromInstances {
+		ENIsListFromInstances = append(ENIsListFromInstances, k)
 	}
 
-	fmt.Println("networks", subnetsFromInstances)
+	fmt.Println("ENIs", ENIsListFromInstances)
 
 	ENIAttrs := &ec2.DescribeNetworkInterfacesInput{}
-	if len(subnetsFromInstances) > 0 {
-		ENIAttrs.Filters = []ec2_types.Filter{
-			{
-				Name:   aws.String("subnet-id"),
-				Values: subnetsFromInstances,
-			},
-		}
+	if len(ENIsFromInstances) > 0 {
+		ENIAttrs.NetworkInterfaceIds = ENIsListFromInstances
 	}
 
 	var result []ec2_types.NetworkInterface
