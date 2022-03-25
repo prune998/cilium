@@ -176,6 +176,7 @@ func (c *Client) describeNetworkInterfaces(ctx context.Context, subnets ipamType
 
 // describeNetworkInterfacesFromInstances lists all ENIs matching filtered EC2 instances
 func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]ec2_types.NetworkInterface, error) {
+	subnetsMapFromInstances := make(map[string]struct)
 	subnetsFromInstances := []string{}
 
 	instanceAttrs := &ec2.DescribeInstancesInput{}
@@ -198,15 +199,19 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		fmt.Println("looping in paginator")
 		for _, r := range output.Reservations {
 			for _, i := range r.Instances {
-				fmt.Println("found instance", i.InstanceId)
-				subnetsFromInstances = append(subnetsFromInstances, *i.SubnetId)
+				fmt.Println("found instance", *i.InstanceId)
+				subnetsMapFromInstances[aws.ToString(i.SubnetId)] = {}
 
 				// add subnets from other ENI
 				for _, ifs := range i.NetworkInterfaces {
-					subnetsFromInstances = append(subnetsFromInstances, *ifs.SubnetId)
+					subnetsMapFromInstances[aws.ToString(ifs.SubnetId)] = {}
 				}
 			}
 		}
+	}
+
+	for k := range subnetsMapFromInstances {
+		subnetsFromInstances = append(subnetsFromInstances, k)
 	}
 
 	fmt.Println("networks", subnetsFromInstances)
@@ -234,6 +239,7 @@ func (c *Client) describeNetworkInterfacesFromInstances(ctx context.Context) ([]
 		}
 
 		result = append(result, output.NetworkInterfaces...)
+		fmt.Println("print results")
 		for i, n := range result {
 			fmt.Printf("'%d', ", i)
 			fmt.Printf("'%s', ", aws.ToString(n.NetworkInterfaceId))
